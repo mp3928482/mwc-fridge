@@ -1,0 +1,7 @@
+{
+  "sheet_url":        "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec",
+  "log_interval_min": 30,
+  "ota_check_hours":  6,
+  "alert_min_f":      32.0,
+  "alert_max_f":      40.0
+}

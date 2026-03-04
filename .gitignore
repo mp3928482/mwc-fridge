@@ -1,0 +1,9 @@
+# ── Secrets ────────────────────────────────────────────
+data/config.json          # wifi creds & fridge ID — NEVER commit this
+
+# ── PlatformIO build artifacts ──────────────────────────
+.pio/
+.vscode/.browse.vc.db*
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/ipch
