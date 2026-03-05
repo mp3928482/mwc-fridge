@@ -1,5 +1,6 @@
 # ── Secrets ────────────────────────────────────────────
 data/config.json          # wifi creds & fridge ID — NEVER commit this
+data/config-*.json        # ignore any other config files (e.g. for different environments)
 
 # ── PlatformIO build artifacts ──────────────────────────
 .pio/
