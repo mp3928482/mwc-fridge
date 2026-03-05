@@ -1,8 +1,0 @@
-{
-  "wifi_networks": [
-    { "ssid": "WonkyDog",   "password": "Anegada403" },
-    { "ssid": "BackupNetwork",    "password": "BackupPassword" },
-    { "ssid": "ThirdNetwork",     "password": "ThirdPassword" }
-  ],
-  "fridge_id": "Fridge-2"
-}
