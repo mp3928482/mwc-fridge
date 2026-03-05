@@ -1,5 +1,8 @@
 {
-  "wifi_ssid":     "YOUR_WIFI_SSID",
-  "wifi_password": "YOUR_WIFI_PASSWORD",
-  "fridge_id":     "Fridge-1"
+  "wifi_networks": [
+    { "ssid": "PrimaryNetwork",   "password": "PrimaryPassword" },
+    { "ssid": "BackupNetwork",    "password": "BackupPassword" },
+    { "ssid": "ThirdNetwork",     "password": "ThirdPassword" }
+  ],
+  "fridge_id": "Fridge-1"
 }

@@ -38,14 +38,25 @@ bool loadLocalConfig() {
     }
 
     // Required fields — halt if missing
-    if (!doc["wifi_ssid"] || !doc["wifi_password"] || !doc["fridge_id"]) {
-        Serial.println("[Config] ERROR: config.json missing required fields (wifi_ssid, wifi_password, fridge_id)");
+    if (!doc["fridge_id"]) {
+        Serial.println("[Config] ERROR: config.json missing required field: fridge_id");
         return false;
     }
 
-    cfg.wifi_ssid     = doc["wifi_ssid"].as<String>();
-    cfg.wifi_password = doc["wifi_password"].as<String>();
-    cfg.fridge_id     = doc["fridge_id"].as<String>();
+    cfg.wifi_count = 0;
+    JsonArray networks = doc["wifi_networks"].as<JsonArray>();
+    for (JsonObject net : networks) {
+        if (cfg.wifi_count >= 3) break;
+        cfg.wifi_networks[cfg.wifi_count].ssid     = net["ssid"].as<String>();
+        cfg.wifi_networks[cfg.wifi_count].password = net["password"].as<String>();
+        cfg.wifi_count++;
+    }
+    if (cfg.wifi_count == 0) {
+        Serial.println("[Config] ERROR: config.json missing wifi_networks (need at least one entry)");
+        return false;
+    }
+
+    cfg.fridge_id = doc["fridge_id"].as<String>();
 
     // Sensible defaults for remote tunables (overwritten by loadRemoteConfig)
     cfg.sheet_url        = "";

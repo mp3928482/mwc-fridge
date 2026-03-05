@@ -6,23 +6,34 @@
 
 // ── WiFi connection ───────────────────────────────────────────────────────────
 static bool connectWiFi() {
-    Serial.printf("[WiFi] Connecting to '%s'", cfg.wifi_ssid.c_str());
     WiFi.mode(WIFI_STA);
-    WiFi.begin(cfg.wifi_ssid.c_str(), cfg.wifi_password.c_str());
 
-    int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 30) {
+    for (int i = 0; i < cfg.wifi_count; i++) {
+        Serial.printf("[WiFi] Trying %d/%d: '%s'", i + 1, cfg.wifi_count,
+                      cfg.wifi_networks[i].ssid.c_str());
+        WiFi.begin(cfg.wifi_networks[i].ssid.c_str(),
+                   cfg.wifi_networks[i].password.c_str());
+
+        int attempts = 0;
+        while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+            delay(500);
+            Serial.print(".");
+            attempts++;
+        }
+
+        if (WiFi.status() == WL_CONNECTED) {
+            Serial.printf("\n[WiFi] Connected to '%s' — IP: %s\n",
+                          cfg.wifi_networks[i].ssid.c_str(),
+                          WiFi.localIP().toString().c_str());
+            return true;
+        }
+
+        Serial.println("\n[WiFi] Failed, trying next...");
+        WiFi.disconnect();
         delay(500);
-        Serial.print(".");
-        attempts++;
     }
 
-    if (WiFi.status() == WL_CONNECTED) {
-        Serial.printf("\n[WiFi] Connected — IP: %s\n", WiFi.localIP().toString().c_str());
-        return true;
-    }
-
-    Serial.println("\n[WiFi] ERROR: Could not connect. Check wifi_ssid and wifi_password in config.json");
+    Serial.println("[WiFi] ERROR: All networks failed. Check wifi_networks in config.json");
     return false;
 }
 

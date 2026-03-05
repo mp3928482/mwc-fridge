@@ -81,13 +81,16 @@ self-recover. Only changeable via USB flash.
 ### 2. Local secrets — data/config.json (LittleFS, USB upload once)
 ```json
 {
-  "wifi_ssid":     "NetworkName",
-  "wifi_password": "Password",
-  "fridge_id":     "Fridge-1"
+  "wifi_networks": [
+    { "ssid": "PrimaryNetwork",  "password": "PrimaryPassword" },
+    { "ssid": "BackupNetwork",   "password": "BackupPassword" }
+  ],
+  "fridge_id": "Fridge-1"
 }
 ```
 NEVER committed to GitHub. Uploaded to device via PlatformIO
 "Upload Filesystem Image". Each unit has a unique fridge_id.
+Up to 3 networks supported — device tries each in order at boot.
 
 ### 3. Remote tunables — releases/remote_config.json (GitHub, fetched at boot)
 ```json
@@ -107,11 +110,16 @@ without any reflashing. This is the preferred way to update settings.
 ## AppConfig Struct (src/config.h)
 
 ```cpp
+struct WifiNetwork {
+    String ssid;
+    String password;
+};
+
 struct AppConfig {
     // From local config.json
-    String wifi_ssid;
-    String wifi_password;
-    String fridge_id;
+    WifiNetwork wifi_networks[3];
+    int         wifi_count;
+    String      fridge_id;
 
     // From remote_config.json
     String sheet_url;
@@ -129,7 +137,7 @@ extern AppConfig cfg;   // global, populated at boot
 
 ```
 loadLocalConfig()       → mount LittleFS, parse config.json
-connectWiFi()           → connect using cfg.wifi_ssid / cfg.wifi_password
+connectWiFi()           → try each cfg.wifi_networks[] entry in order until one connects
 loadRemoteConfig()      → fetch remote_config.json from GitHub, merge into cfg
 checkAndApplyOTA()      → fetch version.txt, compare, flash if newer
 initSensor()            → DS18B20 init on GPIO4
@@ -189,7 +197,7 @@ If version.txt and FIRMWARE_VERSION don't match, OTA will loop or never trigger.
 
 ## Per-Device Flash Checklist (first time, USB required)
 
-- [ ] Create `data/config.json` with correct wifi_ssid, wifi_password, fridge_id
+- [ ] Create `data/config.json` with correct wifi_networks array and fridge_id
 - [ ] PlatformIO → Upload Filesystem Image  (uploads config.json to LittleFS)
 - [ ] PlatformIO → Upload  (flashes firmware)
 - [ ] Open Serial Monitor at 115200 baud and verify clean boot

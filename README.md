@@ -81,8 +81,7 @@ Yellow (DATA) →  D4 (GPIO4)
 
 | Parameter | Location | Reason |
 |---|---|---|
-| `wifi_ssid` | `data/config.json` | Per-device, secret |
-| `wifi_password` | `data/config.json` | Secret |
+| `wifi_networks` | `data/config.json` | Per-device, secret |
 | `fridge_id` | `data/config.json` | Unique per unit |
 | `sheet_url` | `releases/remote_config.json` | Remotely updatable |
 | `log_interval_min` | `releases/remote_config.json` | Remotely updatable |
@@ -98,11 +97,15 @@ This file is **never committed to GitHub**. It contains WiFi credentials and the
 
 ```json
 {
-  "wifi_ssid":     "YourNetworkName",
-  "wifi_password": "YourPassword",
-  "fridge_id":     "Fridge-1"
+  "wifi_networks": [
+    { "ssid": "PrimaryNetwork",  "password": "PrimaryPassword" },
+    { "ssid": "BackupNetwork",   "password": "BackupPassword" }
+  ],
+  "fridge_id": "Fridge-1"
 }
 ```
+
+Up to 3 networks can be listed. The device tries each in order and connects to the first available. Only one entry is required.
 
 ### Remote Config (`releases/remote_config.json`)
 
@@ -159,8 +162,8 @@ Expected Serial Monitor output on a clean boot:
 ========================================
 [Config] Mounting LittleFS...
 [Config] Local config OK — fridge_id: Fridge-1
-[WiFi] Connecting to 'YourNetwork'..........
-[WiFi] Connected — IP: 192.168.1.xxx
+[WiFi] Trying 1/2: 'PrimaryNetwork'..........
+[WiFi] Connected to 'PrimaryNetwork' — IP: 192.168.1.xxx
 [Config] Remote config OK — sheet_url set, interval: 30min, OTA every: 6h
 [OTA] Firmware is up to date.
 [Sensor] DS18B20 init — 1 device(s) found on GPIO 4
@@ -177,9 +180,10 @@ Expected Serial Monitor output on a clean boot:
 2. **Create `data/config.json`** for this specific unit:
    ```json
    {
-     "wifi_ssid":     "NetworkName",
-     "wifi_password": "Password",
-     "fridge_id":     "Fridge-1"
+     "wifi_networks": [
+       { "ssid": "NetworkName", "password": "Password" }
+     ],
+     "fridge_id": "Fridge-1"
    }
    ```
 
@@ -289,7 +293,7 @@ To change sheet URL, logging interval, or alert thresholds without touching any 
 | `LittleFS mount failed` | Filesystem not uploaded | Re-run Upload Filesystem Image |
 | `config.json not found` | File in wrong folder | Make sure it's in `data/` not `src/` |
 | `No sensors found` | Wiring issue | Check pull-up resistor and DATA pin |
-| `WiFi could not connect` | Wrong credentials | Check SSID/password — case sensitive, 2.4GHz only |
+| `All networks failed` | Wrong credentials or out of range | Check SSIDs/passwords in config.json — case sensitive, 2.4GHz only |
 | `Sheet POST failed` | Wrong URL or script not deployed | Check sheet_url in remote_config.json |
 | `-127°F reading` | Sensor disconnected | Check solder joints on DATA pin |
 | OTA not triggering | Version numbers match | Ensure version.txt and config.h are both bumped |
