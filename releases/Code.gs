@@ -4,12 +4,46 @@
 // ============================================================================
 
 // ── Configuration ─────────────────────────────────────────────────────────────
-var SPREADSHEET_ID  = "YOUR_SPREADSHEET_ID";   // From the sheet URL
-var ALERT_EMAIL     = "your@email.com";         // Where to send temp alerts
-var SHEET_TAB_NAME  = "Readings";               // Tab name in the spreadsheet
+var SPREADSHEET_ID     = "YOUR_SPREADSHEET_ID";   // From the sheet URL
+var ALERT_EMAIL        = "your@email.com";         // Where to send temp alerts
+var ALERT_COOLDOWN_MIN = 60;                       // Minutes between alert emails per fridge
 
-// Cooldown: don't send another alert for the same fridge within this many minutes
-var ALERT_COOLDOWN_MIN = 60;
+// ── Get or create the sheet tab for the current month ────────────────────────
+// Tab name format: "Mar 2026", "Apr 2026", etc.
+function getMonthlySheet(ss) {
+  var now       = new Date();
+  var months    = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var tabName   = months[now.getMonth()] + " " + now.getFullYear();
+
+  var sheet = ss.getSheetByName(tabName);
+
+  // Auto-create tab with headers if this is the first reading of the month
+  if (!sheet) {
+    sheet = ss.insertSheet(tabName);
+
+    // Add header row
+    sheet.appendRow(["Timestamp", "Fridge ID", "Temp (°F)", "Temp (°C)", "Status", "Firmware"]);
+    sheet.setFrozenRows(1);
+
+    // Format header row
+    var header = sheet.getRange(1, 1, 1, 6);
+    header.setBackground("#1a73e8");
+    header.setFontColor("#ffffff");
+    header.setFontWeight("bold");
+
+    // Set column widths for readability
+    sheet.setColumnWidth(1, 160);  // Timestamp
+    sheet.setColumnWidth(2, 120);  // Fridge ID
+    sheet.setColumnWidth(3, 90);   // Temp F
+    sheet.setColumnWidth(4, 90);   // Temp C
+    sheet.setColumnWidth(5, 110);  // Status
+    sheet.setColumnWidth(6, 90);   // Firmware
+
+    Logger.log("Created new monthly sheet: " + tabName);
+  }
+
+  return sheet;
+}
 
 // ── doGet — called by ESP32 ───────────────────────────────────────────────────
 function doGet(e) {
@@ -22,34 +56,21 @@ function doGet(e) {
     var version = params.version || "?";
     var ts      = new Date();
 
-    // ── Write row to sheet ──────────────────────────────────────────────────
     var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
-    var sheet = ss.getSheetByName(SHEET_TAB_NAME);
+    var sheet = getMonthlySheet(ss);
 
-    // Auto-create tab with headers if it doesn't exist yet
-    if (!sheet) {
-      sheet = ss.insertSheet(SHEET_TAB_NAME);
-      sheet.appendRow(["Timestamp", "Fridge ID", "Temp (°F)", "Temp (°C)", "Status", "Firmware"]);
-      sheet.setFrozenRows(1);
-
-      // Format header row
-      var header = sheet.getRange(1, 1, 1, 6);
-      header.setBackground("#1a73e8");
-      header.setFontColor("#ffffff");
-      header.setFontWeight("bold");
-    }
-
+    // ── Append reading row ──────────────────────────────────────────────────
     sheet.appendRow([ts, fridge, tempF, tempC, status, version]);
 
     // ── Colour-code the status cell ─────────────────────────────────────────
-    var lastRow   = sheet.getLastRow();
+    var lastRow    = sheet.getLastRow();
     var statusCell = sheet.getRange(lastRow, 5);   // column E = Status
     if (status === "OK") {
-      statusCell.setBackground("#d9ead3");   // light green
+      statusCell.setBackground("#d9ead3");          // light green
     } else if (status.startsWith("ALERT")) {
-      statusCell.setBackground("#f4cccc");   // light red
+      statusCell.setBackground("#f4cccc");          // light red
     } else {
-      statusCell.setBackground("#fff2cc");   // light yellow (SENSOR_ERROR etc)
+      statusCell.setBackground("#fff2cc");          // light yellow (SENSOR_ERROR etc)
     }
 
     // ── Send alert email if out of range ────────────────────────────────────
@@ -67,12 +88,12 @@ function doGet(e) {
 
 // ── Alert email with cooldown ─────────────────────────────────────────────────
 function maybeSendAlert(fridge, tempF, tempC, status, ts) {
-  var props     = PropertiesService.getScriptProperties();
+  var props       = PropertiesService.getScriptProperties();
   var cooldownKey = "last_alert_" + fridge;
   var lastAlert   = props.getProperty(cooldownKey);
   var now         = new Date().getTime();
 
-  // Check cooldown
+  // Check cooldown — suppress if already alerted recently
   if (lastAlert) {
     var elapsed = (now - parseInt(lastAlert)) / 60000;   // minutes
     if (elapsed < ALERT_COOLDOWN_MIN) {
@@ -102,7 +123,7 @@ function maybeSendAlert(fridge, tempF, tempC, status, ts) {
   MailApp.sendEmail(ALERT_EMAIL, subject, body);
   Logger.log("Alert sent for " + fridge + ": " + status);
 
-  // Update cooldown timestamp
+  // Record timestamp to enforce cooldown
   props.setProperty(cooldownKey, now.toString());
 }
 
