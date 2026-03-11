@@ -70,27 +70,42 @@ void checkAndApplyOTA() {
     Serial.printf("[OTA] New firmware available (%s → %s). Starting update...\n",
                   FIRMWARE_VERSION, remoteVersion.c_str());
 
-// ── Step 3: Resolve GitHub redirect then flash ─────────────────────────
-    // GitHub Releases returns a 302 redirect to S3 — resolve the final URL first
-    WiFiClientSecure rClient;
-    rClient.setInsecure();
-    HTTPClient rHttp;
-    rHttp.begin(rClient, FIRMWARE_BIN_URL);
-    rHttp.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
-    int rCode = rHttp.GET();
-    String finalURL = "";
-    if (rCode == 302 || rCode == 301) {
-        finalURL = rHttp.getLocation();
-        Serial.printf("[OTA] Resolved firmware URL: %s\n", finalURL.c_str());
-    }
-    rHttp.end();
+// ── Step 3: Resolve all redirects then flash ───────────────────────────
+    String finalURL = FIRMWARE_BIN_URL;
 
-    if (finalURL.isEmpty()) {
-        Serial.println("[OTA] ERROR: Could not resolve firmware download URL");
-        return;
+    // Follow redirect chain (GitHub does multiple hops to S3)
+    for (int i = 0; i < 5; i++) {
+        WiFiClientSecure rClient;
+        rClient.setInsecure();
+        HTTPClient rHttp;
+        rHttp.begin(rClient, finalURL);
+        rHttp.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+        int rCode = rHttp.GET();
+        String location = rHttp.getLocation();
+        rHttp.end();
+
+        Serial.printf("[OTA] Hop %d: HTTP %d\n", i + 1, rCode);
+
+        if (rCode == 200) {
+            // finalURL is already the direct URL — but we can't reuse this
+            // client for httpUpdate, so just break and use finalURL
+            break;
+        } else if (rCode == 301 || rCode == 302) {
+            if (location.isEmpty()) {
+                Serial.println("[OTA] ERROR: Redirect with no Location header");
+                return;
+            }
+            finalURL = location;
+            Serial.printf("[OTA] Redirected to: %s\n", finalURL.c_str());
+        } else {
+            Serial.printf("[OTA] ERROR: Unexpected HTTP %d during redirect resolution\n", rCode);
+            return;
+        }
     }
 
-    // Flash from the resolved S3 URL (no redirect)
+    Serial.printf("[OTA] Final URL: %s\n", finalURL.c_str());
+
+    // Flash from fully resolved URL
     WiFiClientSecure fClient;
     fClient.setInsecure();
     httpUpdate.onProgress(onOTAProgress);
@@ -104,13 +119,10 @@ void checkAndApplyOTA() {
                           httpUpdate.getLastError(),
                           httpUpdate.getLastErrorString().c_str());
             break;
-
         case HTTP_UPDATE_NO_UPDATES:
             Serial.println("[OTA] No update available (server agrees).");
             break;
-
         case HTTP_UPDATE_OK:
-            // Normally unreachable — device reboots before this
             Serial.println("[OTA] Update OK — rebooting...");
             break;
     }
