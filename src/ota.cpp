@@ -80,6 +80,7 @@ void checkAndApplyOTA() {
     // Reboot on success (default), don't reboot on failure
     httpUpdate.rebootOnUpdate(true);
 
+    httpUpdate.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
     t_httpUpdate_return result = httpUpdate.update(fClient, FIRMWARE_BIN_URL);
 
     switch (result) {
