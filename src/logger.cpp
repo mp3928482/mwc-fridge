@@ -15,6 +15,7 @@ static bool wasOutOfRange = false;
 // ── Sensor init ───────────────────────────────────────────────────────────────
 void initSensor() {
     sensors.begin();
+    delay(500);    // allow DS18B20 to stabilize after power-up
     int count = sensors.getDeviceCount();
     Serial.printf("[Sensor] DS18B20 init — %d device(s) found on GPIO %d\n", count, ONE_WIRE_BUS);
     if (count == 0) {
