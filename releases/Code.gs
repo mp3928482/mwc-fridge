@@ -22,11 +22,11 @@ function getMonthlySheet(ss) {
     sheet = ss.insertSheet(tabName);
 
     // Add header row
-    sheet.appendRow(["Timestamp", "Fridge ID", "Temp (°F)", "Temp (°C)", "Status", "Firmware"]);
+    sheet.appendRow(["Timestamp", "Fridge ID", "Temp (°F)", "Temp (°C)", "Status", "Firmware", "Acknowledged By / Action"]);
     sheet.setFrozenRows(1);
 
     // Format header row
-    var header = sheet.getRange(1, 1, 1, 6);
+    var header = sheet.getRange(1, 1, 1, 7);
     header.setBackground("#1a73e8");
     header.setFontColor("#ffffff");
     header.setFontWeight("bold");
@@ -38,6 +38,7 @@ function getMonthlySheet(ss) {
     sheet.setColumnWidth(4, 90);   // Temp C
     sheet.setColumnWidth(5, 110);  // Status
     sheet.setColumnWidth(6, 90);   // Firmware
+    sheet.setColumnWidth(7, 200);  // Acknowledged By / Action
 
     Logger.log("Created new monthly sheet: " + tabName);
   }
@@ -117,7 +118,7 @@ function maybeSendAlert(fridge, tempF, tempC, status, ts) {
             + "Current:  " + tempF.toFixed(1) + " °F  /  " + tempC.toFixed(1) + " °C\n"
             + "Status:   " + status + "\n"
             + "Time:     " + ts.toString() + "\n\n"
-            + "Please check the refrigerator immediately.\n";
+            + "Please check the refrigerator and update the Acknowledged By column immediately.\n";
   }
 
   MailApp.sendEmail(ALERT_EMAIL, subject, body);

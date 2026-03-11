@@ -4,7 +4,7 @@
 // ── Hardcoded lifelines (never in config files) ─────────────────────────────
 // These MUST stay in firmware — they are the recovery mechanism if anything
 // else goes wrong. Changing them requires a USB flash.
-#define FIRMWARE_VERSION     "1.0.0"
+#define FIRMWARE_VERSION     "1.0.1"
 #define GITHUB_RAW_BASE      "https://raw.githubusercontent.com/mp3928482/mwc-fridge/main/releases"
 #define GITHUB_VERSION_URL   GITHUB_RAW_BASE "/version.txt"
 #define GITHUB_RCONFIG_URL   GITHUB_RAW_BASE "/remote_config.json"
