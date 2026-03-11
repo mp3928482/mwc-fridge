@@ -70,18 +70,33 @@ void checkAndApplyOTA() {
     Serial.printf("[OTA] New firmware available (%s → %s). Starting update...\n",
                   FIRMWARE_VERSION, remoteVersion.c_str());
 
-    // ── Step 3: Download and flash firmware.bin ────────────────────────────
+// ── Step 3: Resolve GitHub redirect then flash ─────────────────────────
+    // GitHub Releases returns a 302 redirect to S3 — resolve the final URL first
+    WiFiClientSecure rClient;
+    rClient.setInsecure();
+    HTTPClient rHttp;
+    rHttp.begin(rClient, FIRMWARE_BIN_URL);
+    rHttp.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+    int rCode = rHttp.GET();
+    String finalURL = "";
+    if (rCode == 302 || rCode == 301) {
+        finalURL = rHttp.getLocation();
+        Serial.printf("[OTA] Resolved firmware URL: %s\n", finalURL.c_str());
+    }
+    rHttp.end();
+
+    if (finalURL.isEmpty()) {
+        Serial.println("[OTA] ERROR: Could not resolve firmware download URL");
+        return;
+    }
+
+    // Flash from the resolved S3 URL (no redirect)
     WiFiClientSecure fClient;
-    fClient.setInsecure();   // Acceptable for this use case
-
-    // Register progress callback
+    fClient.setInsecure();
     httpUpdate.onProgress(onOTAProgress);
-
-    // Reboot on success (default), don't reboot on failure
     httpUpdate.rebootOnUpdate(true);
 
-    httpUpdate.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-    t_httpUpdate_return result = httpUpdate.update(fClient, FIRMWARE_BIN_URL);
+    t_httpUpdate_return result = httpUpdate.update(fClient, finalURL);
 
     switch (result) {
         case HTTP_UPDATE_FAILED:
