@@ -1,0 +1,8 @@
+{
+  "wifi_networks": [
+    { "ssid": "WonkyDog",   "password": "Anegada403" },
+    { "ssid": "midwifepub",    "password": "4123216880" },
+    { "ssid": "ThirdNetwork",     "password": "ThirdPassword" }
+  ],
+  "fridge_id": "Fridge-2"
+}
