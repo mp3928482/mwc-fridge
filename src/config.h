@@ -10,12 +10,18 @@
 #define GITHUB_RCONFIG_URL   GITHUB_RAW_BASE "/remote_config.json"
 // Firmware .bin is served from GitHub Releases (not raw), built dynamically in ota.cpp
 
+// ── WiFi network entry ───────────────────────────────────────────────────────
+struct WiFiNetwork {
+    String ssid;
+    String password;
+};
+
 // ── Merged config struct (local + remote combined) ──────────────────────────
 struct AppConfig {
     // From local config.json (secrets)
-    String wifi_ssid;
-    String wifi_password;
-    String fridge_id;
+    WiFiNetwork wifi_networks[3];   // up to 3 WiFi networks
+    int         wifi_count;         // how many networks are configured
+    String      fridge_id;
 
     // From remote_config.json (tunables)
     String sheet_url;
