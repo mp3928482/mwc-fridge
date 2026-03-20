@@ -64,13 +64,27 @@ void readAndLog() {
         return;
     }
 
-    // Request temperature conversion
-    sensors.requestTemperatures();
-    float tempC = sensors.getTempCByIndex(0);
+    // Request temperature with retry — noisy power environments can cause
+    // spurious 185°F readings. Retry up to 3 times before giving up.
+    float tempC = DEVICE_DISCONNECTED_C;
+    for (int attempt = 1; attempt <= 3; attempt++) {
+        sensors.requestTemperatures();
+        delay(750);   // DS18B20 needs up to 750ms for 12-bit conversion
+        tempC = sensors.getTempCByIndex(0);
 
-    // DS18B20 returns -127 on error
-    if (tempC == DEVICE_DISCONNECTED_C || tempC < -55.0) {
-        Serial.println("[Logger] ERROR: Sensor read failed — check wiring");
+        if (tempC != DEVICE_DISCONNECTED_C && tempC > -55.0 && tempC < 125.0) {
+            if (attempt > 1) {
+                Serial.printf("[Sensor] Good reading on attempt %d\n", attempt);
+            }
+            break;
+        }
+        Serial.printf("[Sensor] Bad reading attempt %d (%.2f°C) — retrying...\n", attempt, tempC);
+        delay(500);
+    }
+
+    // If all 3 attempts failed, log a sensor error
+    if (tempC == DEVICE_DISCONNECTED_C || tempC < -55.0 || tempC > 125.0) {
+        Serial.println("[Logger] ERROR: Sensor read failed after 3 attempts — check wiring");
         postToSheet(0, 0, "SENSOR_ERROR");
         return;
     }

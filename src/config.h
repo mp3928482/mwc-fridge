@@ -4,24 +4,18 @@
 // ── Hardcoded lifelines (never in config files) ─────────────────────────────
 // These MUST stay in firmware — they are the recovery mechanism if anything
 // else goes wrong. Changing them requires a USB flash.
-#define FIRMWARE_VERSION     "1.0.6"
+#define FIRMWARE_VERSION     "1.0.7"
 #define GITHUB_RAW_BASE      "https://raw.githubusercontent.com/mp3928482/mwc-fridge/main/releases"
 #define GITHUB_VERSION_URL   GITHUB_RAW_BASE "/version.txt"
 #define GITHUB_RCONFIG_URL   GITHUB_RAW_BASE "/remote_config.json"
 // Firmware .bin is served from GitHub Releases (not raw), built dynamically in ota.cpp
 
-// ── WiFi network entry ───────────────────────────────────────────────────────
-struct WifiNetwork {
-    String ssid;
-    String password;
-};
-
 // ── Merged config struct (local + remote combined) ──────────────────────────
 struct AppConfig {
     // From local config.json (secrets)
-    WifiNetwork wifi_networks[3];
-    int         wifi_count;
-    String      fridge_id;
+    String wifi_ssid;
+    String wifi_password;
+    String fridge_id;
 
     // From remote_config.json (tunables)
     String sheet_url;
