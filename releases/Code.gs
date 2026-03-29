@@ -8,6 +8,7 @@ var SPREADSHEET_ID     = "YOUR_SPREADSHEET_ID";   // From the sheet URL
 var ALERT_EMAIL        = "your@email.com";         // Where to send temp alerts
 var ALERT_COOLDOWN_MIN = 60;                       // Minutes between alert emails per fridge
 
+
 // ── Get or create the sheet tab for the current month ────────────────────────
 // Tab name format: "Mar 2026", "Apr 2026", etc.
 function getMonthlySheet(ss) {
@@ -61,11 +62,21 @@ function doGet(e) {
     var sheet = getMonthlySheet(ss);
 
     // ── Append reading row ──────────────────────────────────────────────────
-    sheet.appendRow([ts, fridge, tempF, tempC, status, version]);
+    // Add new row to the top of the sheet
+    sheet.insertRowAfter(1);
+    var newRow = sheet.getRange(2, 1, 1, 6);
+    newRow.setValues([[ts, fridge, tempF, tempC, status, version]]);
+
+    // Clear formatting inherited from header row
+    newRow.setBackground(null);
+    newRow.setFontColor(null);
+    newRow.setFontWeight("normal");
+
+    // Force timestamp column to show date AND time
+    sheet.getRange(2, 1).setNumberFormat("M/dd/yyyy HH:mm:ss");
 
     // ── Colour-code the status cell ─────────────────────────────────────────
-    var lastRow    = sheet.getLastRow();
-    var statusCell = sheet.getRange(lastRow, 5);   // column E = Status
+    var statusCell = sheet.getRange(2, 5);
     if (status === "OK") {
       statusCell.setBackground("#d9ead3");          // light green
     } else if (status.startsWith("ALERT")) {
